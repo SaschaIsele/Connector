@@ -25,7 +25,8 @@ To allow an extensible authentication module for HashiCorp Vault, the implementa
 
 To allow the proper organisation of the interfaces needed for the refactoring, a new module named `vault-auth-spi` is introduced in the `spi` directory.
 
-### Vault Authentication Service Interface
+
+### Vault Authentication Auth interface
 
 To interact with a multitude of different authentication methods, an interface for the Vault Authentication Service is needed.
 This interface will contain two methods:
@@ -33,20 +34,24 @@ This interface will contain two methods:
 * `login()`
 * `getVaultToken()`
 
-`login()` contains the authentication and fetches/generates the `client_token` from HashiCorp Vault.
 
-`getVaultToken()` returns the saved `client_token` when needed.
 
 ```java
 public interface HashicorpVaultAuth {
 
+    // Contains the authentication and generates the `client_token` from HashiCorp Vault in accordance to the chosen auth method.
     void login();
     
-    String getVaultToken();
+    // The stored token is returned.
+    String vaultToken();
+    
 }
 ```
 
-### Vault Authentication Service Implementation
+This interface will later be registered in a registry and used by the `HashicorpVaultClient` to receive the `client_token` for the request authentication.
+More on that in the sections [Registration](#registration) and [HashiCorp Vault Client](#HashiCorp-Vault-Client)
+
+### Vault Authentication Auth implementation example
 
 The Vault Authentication Service Implementations each implement a single HashiCorp Vault Authentication method.
 To achieve this, each extension contains an implementation of the newly introduced Vault Authentication Service interface.
@@ -61,47 +66,13 @@ public record HashicorpVaultTokenAuth(@NotNull String vaultToken) implements Has
     
     @Override
     public void login() {
-        // no login is needed for token authentication
-    }
-
-    @Override
-    public String getVaultToken() {
-        return vaultToken;
-    }
-}
-```
-
-Simple example Token Auth Service Implementation:
-
-```java
-@Extension(value = HashicorpVaultTokenAuthExtension.NAME)
-public class HashicorpVaultTokenAuthExtension implements ServiceExtension {
-
-    @Setting(value = "The token used to access the Hashicorp Vault", required = true)
-    public static final String VAULT_TOKEN = "edc.vault.hashicorp.token";
-    
-    public static final String NAME = "Vault Token Auth";
-
-    @Inject
-    private VaultAuthenticationRegistry vaultAuthenticationRegistry;
-
-    @Override
-    public String name() {
-        return NAME;
-    }
-
-    @Override
-    public void initialize(ServiceExtensionContext context) {
-        var token = context.getSetting(VAULT_TOKEN, null);
-        
-        if (!vaultAuthenticationRegistry.hasService("token-based")) {
-            vaultAuthenticationRegistry.register("token-based", HashicorpVaultTokenAuth(token));
-        }
- 
+        // no login is needed for the token authentication method since it is already given with the config
+        // with other implementations like kubernetes auth, a `client_token` will be generated here
     }
     
 }
 ```
+
 
 ### Registry
 
@@ -148,7 +119,7 @@ public class VaultAuthenticationRegistryImpl implements VaultAuthenticationRegis
 
 ### Registration
 
-Each Service Implementation will register itself in the `VaultAuthenticationRegistry`.
+Each Auth implementation will register itself in the `VaultAuthenticationRegistry`.
 This is done through an `@Provider` method inside the HashiCorp Vault extension, that is then injected with `@Inject` into the Service Implementation.
 
 ```java
@@ -207,7 +178,7 @@ Example for new `getHeaders()`:
 @NotNull
 private Headers getHeaders() {
     var headersBuilder = new Headers.Builder().add(VAULT_REQUEST_HEADER, Boolean.toString(true));
-    headersBuilder.add(VAULT_TOKEN_HEADER, vaultAuthenticationRegistry.resolve(settings.getAuthMethod()).getVaultToken());
+    headersBuilder.add(VAULT_TOKEN_HEADER, vaultAuthenticationRegistry.resolve(settings.getAuthMethod()).vaultToken());
     return headersBuilder.build();
 }
 ```
