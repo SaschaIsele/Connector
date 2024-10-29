@@ -13,33 +13,33 @@ Relevant examples are:
 * [Token auth](https://developer.hashicorp.com/vault/docs/auth/token)
 * [Kubernetes auth](https://developer.hashicorp.com/vault/docs/auth/kubernetes)
 * [AppRole auth](https://developer.hashicorp.com/vault/docs/auth/approle)
+
 It goes against the EDC extensibility model and needs to be remedied.
 Additionally, extracting the current implementation of the token authentication into its own extension will improve readability and maintainability of the code.
 
 ## Approach
+
 The refactor will affect only the `vault-hashicorp` extension.
 
-To allow an extensible authentication module for HashiCorp Vault, the implementation will follow the registry pattern.
+To allow an extensible authentication for HashiCorp Vault, the implementation will follow the registry pattern.
 
-### Vault Auth SPI
+### Hashicorp Vault Auth SPI
 
-To allow the proper organisation of the interfaces needed for the refactoring, a new module named `vault-auth-spi` is introduced in the `spi` directory.
+For the proper organisation of the interfaces needed for the refactoring, a new module named `hashicorp-vault-auth-spi` is introduced in the `spi` directory.
 
+It will contain the following interfaces:
 
-### Vault Authentication Auth interface
+* [Hashicorp Vault Auth Interface](#hashicorp-vault-auth-interface)
+* [Hashicorp Vault Auth Registry Interface](#hashicorp-vault-auth-registry)
 
-To interact with a multitude of different authentication methods, an interface for the Vault Authentication Service is needed.
-This interface will contain two methods:
+### Hashicorp Vault Auth Interface
 
-* `login()`
-* `getVaultToken()`
-
-
+To implement a multitude of different authentication methods, an interface for the Hashicorp Vault authentication is needed.
 
 ```java
 public interface HashicorpVaultAuth {
 
-    // Contains the authentication and generates the `client_token` from HashiCorp Vault in accordance to the chosen auth method.
+    // Contains the authentication logic and generates/stores the `client_token` from HashiCorp Vault in accordance to the chosen auth method.
     void login();
     
     // The stored token is returned.
@@ -48,16 +48,21 @@ public interface HashicorpVaultAuth {
 }
 ```
 
-This interface will later be registered in a registry and used by the `HashicorpVaultClient` to receive the `client_token` for the request authentication.
-More on that in the sections [Registration](#registration) and [HashiCorp Vault Client](#HashiCorp-Vault-Client)
+`HashicorpVaultAuth` implementations will be registered in `HashicorpVaultAuthRegistry` and used by the `HashicorpVaultClient` to receive the `client_token` for the request authentication.
+More on that in the sections [Hashicorp Vault Auth Implementation Registration](#Hashicorp-Vault-Auth-Registration) and [HashiCorp Vault Client](#HashiCorp-Vault-Client)
 
-### Vault Authentication Auth implementation example
+### Haschicorp Vault Auth Service Extension
 
-The Vault Authentication Service Implementations each implement a single HashiCorp Vault Authentication method.
-To achieve this, each extension contains an implementation of the newly introduced Vault Authentication Service interface.
-The goal of each extension is to authenticate with HashiCorp Vault and to provide a valid `client_token` to the `HashicorpVaultClient`.
+For every authentication method, a [Hashicorp Vault Auth Implementation](#Hashicorp-Vault-Auth-Implementation) of the [Hashicorp Vault Auth interface](#hashicorp-vault-auth-interface) is needed.
+Each `HashicorpVaultAuth` implementation is packaged inside its own service extension. 
+In this way, it can easily be added/removed from the runtime and maintained in one place.
 
-Interface Implementation:
+Due to the possible differences in the needed configuration of different authentication methods, each Haschicorp Vault Auth Service Extension will need its own configuration values.
+Since those configuration values are specific to the Hashicorp Vault Auth Service Extensions and have no influence on the Hashicorp Vault Extension, they will not be further discussed here.
+
+### Hashicorp Vault Auth Implementation
+
+Example Interface Implementation for `token-based` auth:
 
 ```java
 public record HashicorpVaultTokenAuth(@NotNull String vaultToken) implements HashicorpVaultAuth {
@@ -73,13 +78,13 @@ public record HashicorpVaultTokenAuth(@NotNull String vaultToken) implements Has
 }
 ```
 
+### Hashicorp Vault Auth Registry
 
-### Registry
-
-Interface:
+In line with the registry pattern, `HashicorpVaultAuthRegistry` and `HashicorpVaultAuthRegistryImpl` are created.
+The `HashicorpVaultAuthRegistry` will be used to store one or more implementations of `HashicorpVaultAuth`, each representing a different authentication method.
 
 ```java
-public interface VaultAuthenticationRegistry {
+public interface HashicorpVaultAuthRegistry {
     
     void register(String method, HashicorpVaultAuth authImplementation);
     
@@ -90,14 +95,12 @@ public interface VaultAuthenticationRegistry {
 }
 ```
 
-Implementation:
-
 ```java
-public class VaultAuthenticationRegistryImpl implements VaultAuthenticationRegistry {
+public class HashicorpVaultAuthRegistryImpl implements HashicorpVaultAuthRegistry {
     
     private final Map<String, HashicorpVaultAuth> services = new HashMap<>();
 
-    public VaultAuthenticationRegistryImpl() {
+    public HashicorpVaultAuthRegistryImpl() {
     }
 
     @Override
@@ -117,34 +120,34 @@ public class VaultAuthenticationRegistryImpl implements VaultAuthenticationRegis
 }
 ```
 
-### Registration
+### Hashicorp Vault Auth Registration
 
-Each Auth implementation will register itself in the `VaultAuthenticationRegistry`.
-This is done through an `@Provider` method inside the HashiCorp Vault extension, that is then injected with `@Inject` into the Service Implementation.
+During the `initialize()` call, the service extension providing an auth method will register an instance of its `HashicorpVaultAuth` implementation in the `HashicorpVaultAuthRegistry`.
+The `HashicorpVaultAuthRegistry` is provided to the service extension through use of the provider pattern by the `HashicorpVaultExtension`.
 
 ```java
 @Provider
-public VaultAuthenticationRegistry vaultAuthenticationRegistry() {
-    return new VaultAuthenticationRegistryImpl();
+public HashicorpVaultAuthRegistry hashicorpVaultAuthRegistry() {
+    return new HashicorpVaultAuthRegistryImpl();
 }
 ```
 
-The `VaultAuthenticationRegistry` is injected into the Vault Authentication Service Implementations through `@Inject`.
+Inside the service extension providing an `HashicorpVaultAuth` implementation, the `HashicorpVaultAuthRegistry` is injected.
 
 ```java
 @Inject
-private VaultAuthenticationRegistry vaultAuthenticationRegistry;
+private HashicorpVaultAuthRegistry hashicorpVaultAuthRegistry;
 ```
 
-It will then be registered during initialization through:
+The injected `HashicorpVaultAuthRegistry` is used to register the `HashicorpVaultAuth` implementation.
 
 ```java
 @Override
 public void initialize(ServiceExtensionContext context) {
     var token = context.getSetting(VAULT_TOKEN, null);
 
-    if (!vaultAuthenticationRegistry.hasService("token-based")) {
-        vaultAuthenticationRegistry.register("token-based", HashicorpVaultTokenAuth(token));
+    if (!hashicorpVaultAuthRegistry.hasService("token-based")) {
+        hashicorpVaultAuthRegistry.register("token-based", HashicorpVaultTokenAuth(token));
     }
 
 }
@@ -152,15 +155,16 @@ public void initialize(ServiceExtensionContext context) {
 
 ### Configuration
 
-A new config value is introduced to the HashiCorp Vault Extension named `edc.vault.hashicorp.auth.method`. This value governs which Vault Authentication Service Extension is used from the Vault Auth Registry.
-
-Due to the possible differences in the configuration of each authentication method, each Vault Authentication Service Extension comes with its own configuration values.
+A new config value is introduced to the HashiCorp Vault Extension named `edc.vault.hashicorp.auth.method`.
+`edc.vault.hashicorp.auth.method` governs which `HashicorpVaultAuth` implementation is used from `HashicorpVaultAuthRegistry` and is persisted in `HashicorpVaultSettings`.
 
 ### HashiCorp Vault Client
 
-Since the client contains a lot of authentication logic, it will also go through a refactoring.
-After the refactoring it will only use the `VaultAuthenticationRegistry` based on the configured `edc.vault.hashicorp.auth.method` to fetch the `client_token` that is provided by the Vault Authentication Service Extensions.
-The `client_token` will then be used to generate the Headers for the HTTP requests.
+Since the `HashicorpVaultClient` contains a lot of authentication logic, it will also go through a refactoring.
+The goal of the refactoring, is the removal of the token authentication logic from `HashicorpVaultClient` and to make the authentication logic interchangeable.
+`VaultAuthenticationRegistry` is passed to `HashicorpVaultClient` during creation by `HashicorpVaultServiceExtension`.
+`HashicorpVaultClient` will use `VaultAuthenticationRegistry` based on `edc.vault.hashicorp.auth.method` setting to fetch the `client_token` that is provided by the chosen `HashicorpVaultAuth` implementation.
+`client_token` will then be used to generate the Headers for the HTTP requests.
 
 Old `getHeaders()`:
 
@@ -173,7 +177,8 @@ private Headers getHeaders() {
 }
 ```
 
-Example for new `getHeaders()`:
+New `getHeaders()`:
+
 ```java
 @NotNull
 private Headers getHeaders() {
@@ -183,12 +188,19 @@ private Headers getHeaders() {
 }
 ```
 
-### HashiCorp Vault Token Authentication Extension
+### HashiCorp Vault Token Auth Extension
 
-The current token based authentication is refactored and moved into its own extension named `Vault Token Auth`.
+The token based authentication logic is refactored and moved into its own extension named `HashiCorp Vault Token Auth`.
 This includes the token refresh functionality and will lead to a refactoring of the following classes:
 
 * `HashicorpVaultExtension.java`
 * `HashicorpVaultClient.java`
 * `HashicorpVaultSettings.java`
 * `HashicorpVaultTokenRenewTask.java`
+
+
+## Further Considerations
+
+Currently, the authentication method is chosen through configuration and unable to be changed at runtime.
+If the need arises in the future, the authentication method may be chosen through the request headers instead while keeping the configuration setting as default.
+This option was explicitly left out in this decision record, to keep the refactored code as close to the original as possible in terms of functionality and API.
