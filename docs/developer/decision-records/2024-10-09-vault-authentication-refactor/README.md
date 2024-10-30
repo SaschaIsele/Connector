@@ -6,7 +6,7 @@ Refactor the HashiCorp Vault extension and make it extensible with different met
 
 ## Rationale
 
-The current implementation of the authentication in the HashiCorp Vault extension has no way to add new authentication methods and to switch between them.
+The current implementation of the authentication in the HashiCorp Vault extension has no way to add new authentication methods.
 The full list of possible authentication methods can be found in the [HashiCorp Vault Documentation](https://developer.hashicorp.com/vault/docs/auth)
 Relevant examples are:
 
@@ -82,6 +82,7 @@ public record HashicorpVaultTokenAuth(@NotNull String vaultToken) implements Has
 
 In line with the registry pattern, `HashicorpVaultAuthRegistry` and `HashicorpVaultAuthRegistryImpl` are created.
 The `HashicorpVaultAuthRegistry` will be used to store one or more implementations of `HashicorpVaultAuth`, each representing a different authentication method.
+More on the usage of the `HashicorpVaultAuthRegistry` in the [Hashicorp Vault Auth Registration](#hashicorp-vault-auth-registration) section.
 
 ```java
 public interface HashicorpVaultAuthRegistry {
