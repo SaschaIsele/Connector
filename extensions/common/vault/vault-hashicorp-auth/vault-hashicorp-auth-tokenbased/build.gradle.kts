@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022 Mercedes-Benz Tech Innovation GmbH
+ *  Copyright (c) 2024 Cofinity-X GmbH
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,7 +8,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Mercedes-Benz Tech Innovation GmbH - Initial API and Implementation
+ *       Cofinity-X GmbH - Initial API and Implementation
  *
  */
 plugins {
@@ -21,6 +21,7 @@ dependencies {
     api(project(":spi:common:hashicorp-vault-auth-spi"))
 
     implementation(project(":core:common:lib:util-lib"))
+    implementation(project(":extensions:common:vault:vault-hashicorp"))
 
     testImplementation(project(":core:common:connector-core"))
     testImplementation(testFixtures(project(":core:common:lib:http-lib")))
@@ -31,5 +32,3 @@ dependencies {
     implementation(libs.bouncyCastle.bcpkixJdk18on)
 
 }
-
-

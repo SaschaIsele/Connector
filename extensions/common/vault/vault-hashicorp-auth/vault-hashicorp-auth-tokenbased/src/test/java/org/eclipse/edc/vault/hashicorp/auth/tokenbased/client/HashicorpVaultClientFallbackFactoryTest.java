@@ -9,10 +9,11 @@
  *
  *  Contributors:
  *       Mercedes-Benz Tech Innovation GmbH - Implement automatic Hashicorp Vault token renewal
+ *       Cofinity-X GmbH - Authentication refactoring
  *
  */
 
-package org.eclipse.edc.vault.hashicorp.client;
+package org.eclipse.edc.vault.hashicorp.auth.tokenbased.client;
 
 import okhttp3.Request;
 import org.eclipse.edc.http.spi.FallbackFactories;
