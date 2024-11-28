@@ -16,18 +16,39 @@
 package org.eclipse.edc.vault.hashicorp.auth.tokenbased.client;
 
 import okhttp3.HttpUrl;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Settings for the {@link HashicorpVaultTokenAuthClient}.
  */
+@Settings
 public class HashicorpVaultTokenAuthSettings {
 
+    public static final String VAULT_URL = "edc.vault.hashicorp.url";
+    public static final String VAULT_TOKEN = "edc.vault.hashicorp.token";
+    public static final String VAULT_TOKEN_SCHEDULED_RENEW_ENABLED = "edc.vault.hashicorp.token.scheduled-renew-enabled";
+    public static final String VAULT_TOKEN_TTL = "edc.vault.hashicorp.token.ttl";
+    public static final String VAULT_TOKEN_RENEW_BUFFER = "edc.vault.hashicorp.token.renew-buffer";
+    public static final boolean VAULT_TOKEN_SCHEDULED_RENEW_ENABLED_DEFAULT = true;
+    public static final long VAULT_TOKEN_RENEW_BUFFER_DEFAULT = 30;
+    public static final long VAULT_TOKEN_TTL_DEFAULT = 300;
+
+    @Setting(description = "The URL of the Hashicorp Vault", required = true, key = VAULT_URL)
     private HttpUrl url;
+
+    @Setting(description = "The token used to access the Hashicorp Vault", required = true, key = VAULT_TOKEN)
     private String token;
+
+    @Setting(description = "Whether the automatic token renewal process will be triggered or not. Should be disabled only for development and testing purposes", defaultValue = "true", key = VAULT_TOKEN_SCHEDULED_RENEW_ENABLED)
     private boolean scheduledTokenRenewEnabled;
+
+    @Setting(description = "The time-to-live (ttl) value of the Hashicorp Vault token in seconds", defaultValue = "300", type = "long", key = VAULT_TOKEN_TTL)
     private long ttl;
+
+    @Setting(description = "The renew buffer of the Hashicorp Vault token in seconds", defaultValue = "30", type = "long", key = VAULT_TOKEN_RENEW_BUFFER)
     private long renewBuffer;
 
     private HashicorpVaultTokenAuthSettings() {

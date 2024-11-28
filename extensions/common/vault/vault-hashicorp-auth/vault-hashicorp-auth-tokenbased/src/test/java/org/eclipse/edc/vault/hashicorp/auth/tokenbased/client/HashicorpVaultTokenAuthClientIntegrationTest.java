@@ -46,7 +46,6 @@ class HashicorpVaultTokenAuthClientIntegrationTest {
     abstract static class Tests {
 
         protected static final String HTTP_URL_FORMAT = "http://%s:%s";
-        protected static final String HEALTH_CHECK_PATH = "/health/path";
         protected static final String CLIENT_TOKEN_KEY = "client_token";
         protected static final String AUTH_KEY = "auth";
         protected static final long CREATION_TTL = 6L;
@@ -55,7 +54,6 @@ class HashicorpVaultTokenAuthClientIntegrationTest {
         protected HashicorpVaultTokenAuthClient client;
         protected final ObjectMapper mapper = new ObjectMapper();
         protected final ConsoleMonitor monitor = new ConsoleMonitor();
-        //protected final HashicorpVaultAuthRegistryImpl registry = new HashicorpVaultAuthRegistryImpl();
 
         @BeforeEach
         void beforeEach() throws IOException, InterruptedException {

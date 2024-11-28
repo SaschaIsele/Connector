@@ -29,7 +29,7 @@ public class HashicorpVaultSettings {
     public static final String VAULT_API_SECRET_PATH_DEFAULT = "/v1/secret";
     public static final boolean VAULT_HEALTH_CHECK_STANDBY_OK_DEFAULT = false;
     public static final boolean VAULT_HEALTH_CHECK_ENABLED_DEFAULT = true;
-    private static final String VAULT_AUTH_DEFAULT = "fallbackToken";
+    public static final String VAULT_AUTH_DEFAULT = "fallbackToken";
 
     @Setting(description = "The URL of the Hashicorp Vault", key = "edc.vault.hashicorp.url")
     private String url;

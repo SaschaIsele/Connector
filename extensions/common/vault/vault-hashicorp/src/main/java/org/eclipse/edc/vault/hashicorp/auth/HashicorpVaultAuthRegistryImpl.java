@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.eclipse.edc.vault.hashicorp.HashicorpVaultExtension.VAULT_AUTH_DEFAULT;
+import static org.eclipse.edc.vault.hashicorp.client.HashicorpVaultSettings.VAULT_AUTH_DEFAULT;
 
 public class HashicorpVaultAuthRegistryImpl implements HashicorpVaultAuthRegistry {
 

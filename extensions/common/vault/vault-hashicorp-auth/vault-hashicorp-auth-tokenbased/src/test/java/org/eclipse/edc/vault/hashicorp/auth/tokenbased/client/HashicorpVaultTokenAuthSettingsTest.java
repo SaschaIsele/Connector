@@ -21,8 +21,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.vault.hashicorp.auth.tokenbased.HashicorpVaultTokenAuthExtension.VAULT_TOKEN_RENEW_BUFFER_DEFAULT;
-import static org.eclipse.edc.vault.hashicorp.auth.tokenbased.HashicorpVaultTokenAuthExtension.VAULT_TOKEN_TTL_DEFAULT;
+import static org.eclipse.edc.vault.hashicorp.auth.tokenbased.client.HashicorpVaultTokenAuthSettings.VAULT_TOKEN_RENEW_BUFFER_DEFAULT;
+import static org.eclipse.edc.vault.hashicorp.auth.tokenbased.client.HashicorpVaultTokenAuthSettings.VAULT_TOKEN_TTL_DEFAULT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
