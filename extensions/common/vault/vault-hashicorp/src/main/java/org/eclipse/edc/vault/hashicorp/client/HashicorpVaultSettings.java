@@ -43,9 +43,9 @@ public class HashicorpVaultSettings {
     private String secretPath;
     @Setting(description = "The path of the folder that the secret is stored in, relative to VAULT_FOLDER_PATH", required = false, key = "edc.vault.hashicorp.folder")
     private String folderPath;
-    @Setting(description = "The value that governs which auth method is used, defaults to the fallbackToken", defaultValue = VAULT_AUTH_DEFAULT)
+    @Setting(description = "The value that governs which auth method is used, defaults to the fallbackToken", required = false, defaultValue = VAULT_AUTH_DEFAULT)
     private String authMethod;
-    @Setting(description = "Token used for fallback when no authentication extension is registered, should only be used for testing/demo purposes")
+    @Setting(description = "Token used for fallback when no authentication extension is registered, should only be used for testing/demo purposes", required = false)
     private String fallbackToken;
 
     private HashicorpVaultSettings() {

@@ -36,19 +36,19 @@ public class HashicorpVaultTokenAuthSettings {
     public static final long VAULT_TOKEN_RENEW_BUFFER_DEFAULT = 30;
     public static final long VAULT_TOKEN_TTL_DEFAULT = 300;
 
-    @Setting(description = "The URL of the Hashicorp Vault", required = true, key = VAULT_URL)
+    @Setting(description = "The URL of the Hashicorp Vault", key = VAULT_URL)
     private HttpUrl url;
 
-    @Setting(description = "The token used to access the Hashicorp Vault", required = true, key = VAULT_TOKEN)
+    @Setting(description = "The token used to access the Hashicorp Vault", key = VAULT_TOKEN)
     private String token;
 
-    @Setting(description = "Whether the automatic token renewal process will be triggered or not. Should be disabled only for development and testing purposes", defaultValue = "true", key = VAULT_TOKEN_SCHEDULED_RENEW_ENABLED)
+    @Setting(description = "Whether the automatic token renewal process will be triggered or not. Should be disabled only for development and testing purposes", required = false, defaultValue = "true", key = VAULT_TOKEN_SCHEDULED_RENEW_ENABLED)
     private boolean scheduledTokenRenewEnabled;
 
-    @Setting(description = "The time-to-live (ttl) value of the Hashicorp Vault token in seconds", defaultValue = "300", type = "long", key = VAULT_TOKEN_TTL)
+    @Setting(description = "The time-to-live (ttl) value of the Hashicorp Vault token in seconds", required = false, defaultValue = "300", type = "long", key = VAULT_TOKEN_TTL)
     private long ttl;
 
-    @Setting(description = "The renew buffer of the Hashicorp Vault token in seconds", defaultValue = "30", type = "long", key = VAULT_TOKEN_RENEW_BUFFER)
+    @Setting(description = "The renew buffer of the Hashicorp Vault token in seconds", required = false, defaultValue = "30", type = "long", key = VAULT_TOKEN_RENEW_BUFFER)
     private long renewBuffer;
 
     private HashicorpVaultTokenAuthSettings() {

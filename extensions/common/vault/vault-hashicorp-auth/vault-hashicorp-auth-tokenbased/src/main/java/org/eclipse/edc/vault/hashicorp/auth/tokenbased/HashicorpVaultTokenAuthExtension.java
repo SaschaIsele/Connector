@@ -20,14 +20,12 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
-import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.vault.hashicorp.auth.tokenbased.client.HashicorpVaultTokenAuthClient;
 import org.eclipse.edc.vault.hashicorp.auth.tokenbased.client.HashicorpVaultTokenAuthSettings;
-import org.eclipse.edc.vault.hashicorp.client.HashicorpVaultSettings;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
