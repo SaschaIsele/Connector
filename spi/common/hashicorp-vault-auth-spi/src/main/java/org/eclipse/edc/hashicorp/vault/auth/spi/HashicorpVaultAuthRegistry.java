@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.hashicorp.vault.auth.spi;
 
-import org.eclipse.edc.hashicorp.vault.auth.spi.HashicorpVaultAuth;
 import org.jetbrains.annotations.NotNull;
 
 /**

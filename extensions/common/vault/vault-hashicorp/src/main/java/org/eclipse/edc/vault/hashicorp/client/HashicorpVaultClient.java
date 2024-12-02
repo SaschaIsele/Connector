@@ -38,8 +38,6 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -55,7 +53,6 @@ public class HashicorpVaultClient {
     private static final int HTTP_CODE_404 = 404;
 
     private final EdcHttpClient httpClient;
-    private final Headers headers;
     private final ObjectMapper objectMapper;
     private final HashicorpVaultSettings settings;
     private final HttpUrl healthCheckUrl;
@@ -72,7 +69,6 @@ public class HashicorpVaultClient {
         this.monitor = monitor;
         this.settings = settings;
         this.registry = registry;
-        this.headers = getHeaders();
         this.healthCheckUrl = getHealthCheckUrl();
     }
 
@@ -137,7 +133,7 @@ public class HashicorpVaultClient {
                 .build();
         var request = new Request.Builder()
                 .url(requestUri)
-                .headers(headers)
+                .headers(getHeaders())
                 .post(createRequestBody(requestPayload))
                 .build();
 
@@ -160,7 +156,7 @@ public class HashicorpVaultClient {
 
     public Result<Void> destroySecret(@NotNull String key) {
         var requestUri = getSecretUrl(key, VAULT_SECRET_METADATA_PATH);
-        var request = new Request.Builder().url(requestUri).headers(headers).delete().build();
+        var request = new Request.Builder().url(requestUri).headers(getHeaders()).delete().build();
 
         try (var response = httpClient.execute(request)) {
             return response.isSuccessful() || response.code() == HTTP_CODE_404
@@ -215,7 +211,7 @@ public class HashicorpVaultClient {
     private Request httpGet(HttpUrl requestUri) {
         return new Request.Builder()
                 .url(requestUri)
-                .headers(headers)
+                .headers(getHeaders())
                 .get()
                 .build();
     }

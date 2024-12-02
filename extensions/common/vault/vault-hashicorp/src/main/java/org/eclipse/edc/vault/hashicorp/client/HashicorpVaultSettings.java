@@ -75,7 +75,7 @@ public class HashicorpVaultSettings {
         return folderPath;
     }
 
-    public String getFallbackToken(){
+    public String getFallbackToken() {
         return fallbackToken;
     }
 
