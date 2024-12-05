@@ -30,8 +30,11 @@ public class HashicorpVaultSettings {
     public static final boolean VAULT_HEALTH_CHECK_STANDBY_OK_DEFAULT = false;
     public static final boolean VAULT_HEALTH_CHECK_ENABLED_DEFAULT = true;
     public static final String VAULT_AUTH_DEFAULT = "fallbackToken";
+    public static final String VAULT_AUTH_METHOD_KEY = "edc.vault.hashicorp.auth.method";
+    public static final String VAULT_FALLBACK_TOKEN_KEY = "edc.vault.hashicorp.fallbackToken";
+    public static final String VAULT_URL_KEY = "edc.vault.hashicorp.url";
 
-    @Setting(description = "The URL of the Hashicorp Vault", key = "edc.vault.hashicorp.url")
+    @Setting(description = "The URL of the Hashicorp Vault", key = VAULT_URL_KEY)
     private String url;
     @Setting(description = "Whether or not the vault health check is enabled", defaultValue = VAULT_HEALTH_CHECK_ENABLED_DEFAULT + "", key = "edc.vault.hashicorp.health.check.enabled")
     private boolean healthCheckEnabled;
@@ -43,9 +46,9 @@ public class HashicorpVaultSettings {
     private String secretPath;
     @Setting(description = "The path of the folder that the secret is stored in, relative to VAULT_FOLDER_PATH", required = false, key = "edc.vault.hashicorp.folder")
     private String folderPath;
-    @Setting(description = "The value that governs which auth method is used, defaults to the fallbackToken", required = false, defaultValue = VAULT_AUTH_DEFAULT)
+    @Setting(description = "The value that governs which auth method is used, defaults to the fallbackToken", required = false, defaultValue = VAULT_AUTH_DEFAULT, key = VAULT_AUTH_METHOD_KEY)
     private String authMethod;
-    @Setting(description = "Token used for fallback when no authentication extension is registered, should only be used for testing/demo purposes", required = false)
+    @Setting(description = "Token used for fallback when no authentication extension is registered, should only be used for testing/demo purposes", required = false, key = VAULT_FALLBACK_TOKEN_KEY)
     private String fallbackToken;
 
     private HashicorpVaultSettings() {

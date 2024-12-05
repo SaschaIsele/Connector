@@ -81,6 +81,7 @@ class HashicorpVaultClientIntegrationTest {
             return HashicorpVaultSettings.Builder.newInstance()
                     .url(HTTP_URL_FORMAT.formatted(VAULT_CONTAINER.getHost(), VAULT_CONTAINER.getFirstMappedPort()))
                     .healthCheckPath(HEALTH_CHECK_PATH)
+                    .fallbackToken(clientToken)
                     .build();
         }
 
