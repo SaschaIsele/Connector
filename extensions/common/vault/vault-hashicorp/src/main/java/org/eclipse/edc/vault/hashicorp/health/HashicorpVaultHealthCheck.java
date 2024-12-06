@@ -10,6 +10,7 @@
  *  Contributors:
  *       Mercedes-Benz Tech Innovation GmbH - Initial API and Implementation
  *       Mercedes-Benz Tech Innovation GmbH - Implement automatic Hashicorp Vault token renewal
+ *       Cofinity-X GmbH - Authentication refactoring
  *
  */
 
@@ -43,7 +44,6 @@ public class HashicorpVaultHealthCheck implements ReadinessProvider, LivenessPro
     public HealthCheckResult get() {
         return client
                 .doHealthCheck()
-                .merge(client.isTokenRenewable())
                 .flatMap(result -> {
                     var statusBuilder = HealthCheckResult.Builder.newInstance().component("HashicorpVault");
                     if (result.succeeded()) {

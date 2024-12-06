@@ -13,15 +13,15 @@
  *
  */
 
-package org.eclipse.edc.vault.hashicorp.client;
+package org.eclipse.edc.vault.hashicorp.auth.tokenbased.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.Json;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
-import org.eclipse.edc.vault.hashicorp.auth.HashicorpVaultAuthRegistryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.vault.VaultContainer;
@@ -30,11 +30,15 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.http.client.testfixtures.HttpTestUtils.testHttpClient;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 
-class HashicorpVaultClientIntegrationTest {
+class HashicorpVaultTokenAuthClientIntegrationTest {
 
     @ComponentTest
     @Testcontainers
@@ -42,15 +46,57 @@ class HashicorpVaultClientIntegrationTest {
     abstract static class Tests {
 
         protected static final String HTTP_URL_FORMAT = "http://%s:%s";
-        protected static final String HEALTH_CHECK_PATH = "/health/path";
         protected static final String CLIENT_TOKEN_KEY = "client_token";
         protected static final String AUTH_KEY = "auth";
-        protected static final String TOKEN = UUID.randomUUID().toString();
-        protected HashicorpVaultClient client;
+        protected static final long CREATION_TTL = 6L;
+        protected static final long TTL = 5L;
+        protected static final long RENEW_BUFFER = 4L;
+        protected HashicorpVaultTokenAuthClient client;
         protected final ObjectMapper mapper = new ObjectMapper();
         protected final ConsoleMonitor monitor = new ConsoleMonitor();
-        protected final HashicorpVaultAuthRegistryImpl registry = new HashicorpVaultAuthRegistryImpl(TOKEN);
 
+        @BeforeEach
+        void beforeEach() throws IOException, InterruptedException {
+            assertThat(CREATION_TTL).isGreaterThan(TTL);
+        }
+
+        @Test
+        void lookUpToken_whenTokenNotExpired_shouldSucceed() {
+            var tokenLookUpResult = client.isTokenRenewable();
+
+            assertThat(tokenLookUpResult).isSucceeded().isEqualTo(true);
+        }
+
+        @Test
+        void lookUpToken_whenTokenExpired_shouldFail() {
+            await()
+                    .pollDelay(CREATION_TTL, TimeUnit.SECONDS)
+                    .atMost(CREATION_TTL + 1, TimeUnit.SECONDS)
+                    .untilAsserted(() -> {
+                        var tokenLookUpResult = client.isTokenRenewable();
+                        assertThat(tokenLookUpResult).isFailed();
+                        assertThat(tokenLookUpResult.getFailureDetail()).isEqualTo("Token look up failed with status 403");
+                    });
+        }
+
+        @Test
+        void renewToken_whenTokenNotExpired_shouldSucceed() {
+            var tokenRenewResult = client.renewToken();
+
+            assertThat(tokenRenewResult).isSucceeded().satisfies(ttl -> assertThat(ttl).isEqualTo(TTL));
+        }
+
+        @Test
+        void renewToken_whenTokenExpired_shouldFail() {
+            await()
+                    .pollDelay(CREATION_TTL, TimeUnit.SECONDS)
+                    .atMost(CREATION_TTL + 1, TimeUnit.SECONDS)
+                    .untilAsserted(() -> {
+                        var tokenRenewResult = client.renewToken();
+                        assertThat(tokenRenewResult).isFailed();
+                        assertThat(tokenRenewResult.getFailureDetail()).isEqualTo("Token renew failed with status: 403");
+                    });
+        }
     }
 
     @ComponentTest
@@ -59,14 +105,15 @@ class HashicorpVaultClientIntegrationTest {
     class LastKnownFoss extends Tests {
         @Container
         static final VaultContainer<?> VAULT_CONTAINER = new VaultContainer<>("vault:1.9.6")
-                .withVaultToken(TOKEN);
+                .withVaultToken(UUID.randomUUID().toString());
 
-        public static HashicorpVaultSettings getSettings() throws IOException, InterruptedException {
+        public static HashicorpVaultTokenAuthSettings getSettings() throws IOException, InterruptedException {
             var execResult = VAULT_CONTAINER.execInContainer(
                     "vault",
                     "token",
                     "create",
                     "-policy=root",
+                    "-ttl=%d".formatted(CREATION_TTL),
                     "-format=json");
 
             var jsonParser = Json.createParser(new StringReader(execResult.getStdout()));
@@ -78,20 +125,20 @@ class HashicorpVaultClientIntegrationTest {
                     .asJsonObject();
             var clientToken = auth.getString(CLIENT_TOKEN_KEY);
 
-            return HashicorpVaultSettings.Builder.newInstance()
+            return HashicorpVaultTokenAuthSettings.Builder.newInstance()
                     .url(HTTP_URL_FORMAT.formatted(VAULT_CONTAINER.getHost(), VAULT_CONTAINER.getFirstMappedPort()))
-                    .healthCheckPath(HEALTH_CHECK_PATH)
-                    .fallbackToken(clientToken)
+                    .token(clientToken)
+                    .ttl(TTL)
+                    .renewBuffer(RENEW_BUFFER)
                     .build();
         }
 
         @BeforeEach
         void beforeEach() throws IOException, InterruptedException {
-            client = new HashicorpVaultClient(
+            client = new HashicorpVaultTokenAuthClient(
                     testHttpClient(),
                     mapper,
                     monitor,
-                    registry,
                     getSettings()
             );
         }
@@ -105,12 +152,13 @@ class HashicorpVaultClientIntegrationTest {
         static final VaultContainer<?> VAULT_CONTAINER = new VaultContainer<>("hashicorp/vault:1.17.3")
                 .withVaultToken(UUID.randomUUID().toString());
 
-        public static HashicorpVaultSettings getSettings() throws IOException, InterruptedException {
+        public static HashicorpVaultTokenAuthSettings getSettings() throws IOException, InterruptedException {
             var execResult = VAULT_CONTAINER.execInContainer(
                     "vault",
                     "token",
                     "create",
                     "-policy=root",
+                    "-ttl=%d".formatted(CREATION_TTL),
                     "-format=json");
 
             var jsonParser = Json.createParser(new StringReader(execResult.getStdout()));
@@ -122,22 +170,23 @@ class HashicorpVaultClientIntegrationTest {
                     .asJsonObject();
             var clientToken = auth.getString(CLIENT_TOKEN_KEY);
 
-            return HashicorpVaultSettings.Builder.newInstance()
+            return HashicorpVaultTokenAuthSettings.Builder.newInstance()
                     .url(HTTP_URL_FORMAT.formatted(VAULT_CONTAINER.getHost(), VAULT_CONTAINER.getFirstMappedPort()))
-                    .healthCheckPath(HEALTH_CHECK_PATH)
-                    .fallbackToken(clientToken)
+                    .token(clientToken)
+                    .ttl(TTL)
+                    .renewBuffer(RENEW_BUFFER)
                     .build();
         }
 
         @BeforeEach
         void beforeEach() throws IOException, InterruptedException {
-            client = new HashicorpVaultClient(
+            client = new HashicorpVaultTokenAuthClient(
                     testHttpClient(),
                     mapper,
                     monitor,
-                    registry,
                     getSettings()
             );
         }
     }
 }
+
