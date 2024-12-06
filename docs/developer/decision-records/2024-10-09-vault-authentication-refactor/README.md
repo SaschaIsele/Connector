@@ -206,7 +206,7 @@ This includes the token refresh functionality and will lead to a refactoring of 
 
 `HashicorpVaultExtension.java`: `initialize()` no longer will start the token refresh and `stop()` will be removed since the extension does not govern token refresh anymore.
 
-`HashicorpVaultClient.java`: `isTokenRenewable()` and `renewToken()` and their private methods will be moved to the Token Auth Extension.
+`HashicorpVaultClient.java`: `isTokenRenewable()` and `renewToken()` and their private methods will be moved to a new dedicated client in the Token Auth Extension.
 
 `HashicorpVaultSettings.java`: some settings are moved and two new ones are added as described in the sections [HashiCorp Vault Token Auth Extension Settings](#hashicorp-vault-token-auth-extension-settings) and [Configuration](#configuration).
 
@@ -216,7 +216,7 @@ The respective tests covering the moved functionality are also moved accordingly
 
 ### HashiCorp Vault Token Auth Extension
 
-The HashiCorp Vault Token Auth Extension will contain the token authentication functionality and the token refresh functionality that has been removed from the HashiCorp Vault Extension.
+The HashiCorp Vault Token Auth Extension will contain the token storage functionality and the token refresh functionality that has been removed from the HashiCorp Vault Extension.
 
 #### HashiCorp Vault Token Auth Extension Settings
 
@@ -225,7 +225,7 @@ The following settings have been moved from the HashiCorp Vault Extension to th 
 Duplicate setting from the HashiCorp Vault Extension, since the HashiCorp Vault Token Auth Extension also needs access to the vault.
 `edc.vault.hashicorp.url`
 
-Settings moved from the HashiCorp Vault Extension, that only concern the HashiCorp Vault Token Auth Extension.
+Settings moved from the HashiCorp Vault Extension, that only concern the token storage and token refresh.
 `edc.vault.hashicorp.token`
 `edc.vault.hashicorp.token.scheduled-renew-enabled`
 `edc.vault.hashicorp.token.ttl`
@@ -233,7 +233,7 @@ Settings moved from the HashiCorp Vault Extension, that only concern the HashiCo
 
 ### HashiCorp Vault Health Extension
 
-The `get()` method of `HashicorpVaultHealthCheck` is using a merge of the response from the Hashicorp Vault Health API and the ability to renew the given token.
+The `get()` method of `HashicorpVaultHealthCheck` is currently using a merge of the response from the Hashicorp Vault Health API and the ability to renew the given token.
 After the refactor, the token renewal is no longer a part of the base `HashicorpVaultExtension`.
 As such the `get()` method is adjusted and will only return the response from the Hashicorp Vault Health API.
 
