@@ -14,27 +14,30 @@
 
 package org.eclipse.edc.vault.hashicorp.auth.kubernetes.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.vault.hashicorp.HttpUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Objects;
-import static org.eclipse.edc.vault.hashicorp.HashicorpVaultClient.VAULT_REQUEST_HEADER;
-import static org.eclipse.edc.vault.hashicorp.HttpUtil.CALL_UNSUCCESSFUL_ERROR_TEMPLATE;
 
 public class HashicorpVaultKubernetesAuthClient {
 
     @NotNull private final String vaultUrl;
     @NotNull private final EdcHttpClient httpClient;
     @NotNull private final ObjectMapper objectMapper;
-    @NotNull private final HashicorpVaultKubernetesSettings settings;
+
+    private static final MediaType MEDIA_TYPE_APPLICATION_JSON = MediaType.get("application/json");
+    private static final String VAULT_REQUEST_HEADER = "X-Vault-Request";
+    public static final String CALL_UNSUCCESSFUL_ERROR_TEMPLATE = "Call unsuccessful: %s";
 
     public HashicorpVaultKubernetesAuthClient(@NotNull String vaultUrl, @NotNull EdcHttpClient httpClient, @NotNull ObjectMapper objectMapper) {
         this.vaultUrl = vaultUrl;
@@ -53,7 +56,7 @@ public class HashicorpVaultKubernetesAuthClient {
         Request request = new Request.Builder()
                 .url(requestUrl)
                 .headers(headers)
-                .post(HttpUtil.createRequestBody(objectMapper, requestPayload))
+                .post(createRequestBody(objectMapper, requestPayload))
                 .build();
 
         try (Response response = httpClient.execute(request)) {
@@ -74,6 +77,16 @@ public class HashicorpVaultKubernetesAuthClient {
     @NotNull
     private Headers getHeaders() {
         return new Headers.Builder().add(VAULT_REQUEST_HEADER, Boolean.toString(true)).build();
+    }
+
+    private RequestBody createRequestBody(ObjectMapper objectMapper, Object requestPayload) {
+        String jsonRepresentation;
+        try {
+            jsonRepresentation = objectMapper.writeValueAsString(requestPayload);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        return RequestBody.create(jsonRepresentation, MEDIA_TYPE_APPLICATION_JSON);
     }
 
     private HttpUrl getKubernetesAuthLoginUrl() {
