@@ -10,6 +10,7 @@
  *  Contributors:
  *       Mercedes-Benz Tech Innovation GmbH - Initial API and Implementation
  *       Mercedes-Benz Tech Innovation GmbH - Implement automatic Hashicorp Vault token renewal
+ *       Cofinity-X GmbH - Authentication refactoring
  *
  */
 
@@ -23,12 +24,11 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.security.Vault;
-import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.vault.hashicorp.auth.HashicorpVaultAuthRegistryImpl;
 import org.eclipse.edc.vault.hashicorp.client.HashicorpVaultClient;
 import org.eclipse.edc.vault.hashicorp.client.HashicorpVaultSettings;
-import org.eclipse.edc.vault.hashicorp.client.HashicorpVaultTokenRenewTask;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
@@ -39,15 +39,12 @@ public class HashicorpVaultExtension implements ServiceExtension {
     @Inject
     private EdcHttpClient httpClient;
 
-    @Inject
-    private ExecutorInstrumentation executorInstrumentation;
-
     @Configuration
     private HashicorpVaultSettings config;
 
     private HashicorpVaultClient client;
-    private HashicorpVaultTokenRenewTask tokenRenewalTask;
     private Monitor monitor;
+    private HashicorpVaultAuthRegistryImpl registry;
 
     @Override
     public String name() {
@@ -61,9 +58,19 @@ public class HashicorpVaultExtension implements ServiceExtension {
             var mapper = new ObjectMapper();
             mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-            client = new HashicorpVaultClient(httpClient, mapper, monitor, config);
+            client = new HashicorpVaultClient(
+                    httpClient,
+                    mapper,
+                    monitor,
+                    registry,
+                    config);
         }
         return client;
+    }
+
+    @Provider
+    public HashicorpVaultAuthRegistryImpl hashicorpVaultAuthRegistry() {
+        return getRegistry();
     }
 
     @Provider
@@ -74,25 +81,14 @@ public class HashicorpVaultExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         monitor = context.getMonitor().withPrefix(NAME);
-        tokenRenewalTask = new HashicorpVaultTokenRenewTask(
-                NAME,
-                executorInstrumentation,
-                hashicorpVaultClient(),
-                config.renewBuffer(),
-                monitor);
+        registry = getRegistry();
     }
 
-    @Override
-    public void start() {
-        if (config.scheduledTokenRenewEnabled()) {
-            tokenRenewalTask.start();
+    private HashicorpVaultAuthRegistryImpl getRegistry() {
+        if (registry == null) {
+            registry = new HashicorpVaultAuthRegistryImpl(config.getFallbackToken());
         }
+        return registry;
     }
 
-    @Override
-    public void shutdown() {
-        if (tokenRenewalTask.isRunning()) {
-            tokenRenewalTask.stop();
-        }
-    }
 }

@@ -36,6 +36,8 @@ import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.vault.hashicorp.client.HashicorpVaultSettings.VAULT_FALLBACK_TOKEN_KEY;
+import static org.eclipse.edc.vault.hashicorp.client.HashicorpVaultSettings.VAULT_URL_KEY;
 
 @ComponentTest
 @Testcontainers
@@ -50,8 +52,6 @@ class HashicorpVaultIntegrationTest {
     private static final VaultContainer<?> VAULTCONTAINER = new VaultContainer<>(DOCKER_IMAGE_NAME)
             .withVaultToken(TOKEN)
             .withSecretInVault("secret/" + VAULT_ENTRY_KEY, format("%s=%s", VAULT_DATA_ENTRY_NAME, VAULT_ENTRY_VALUE));
-    private static final String VAULT_URL = "edc.vault.hashicorp.url";
-    private static final String VAULT_TOKEN = "edc.vault.hashicorp.token";
 
 
     @RegisterExtension
@@ -145,8 +145,8 @@ class HashicorpVaultIntegrationTest {
         }
         return new HashMap<>() {
             {
-                put(VAULT_URL, "http://%s:%d".formatted(VAULTCONTAINER.getHost(), VAULTCONTAINER.getFirstMappedPort()));
-                put(VAULT_TOKEN, TOKEN);
+                put(VAULT_URL_KEY, "http://%s:%d".formatted(VAULTCONTAINER.getHost(), VAULTCONTAINER.getFirstMappedPort()));
+                put(VAULT_FALLBACK_TOKEN_KEY, TOKEN);
             }
         };
     }

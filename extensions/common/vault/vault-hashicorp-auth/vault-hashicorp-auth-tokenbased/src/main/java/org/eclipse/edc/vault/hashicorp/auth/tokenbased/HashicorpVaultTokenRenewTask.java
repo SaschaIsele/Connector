@@ -9,13 +9,15 @@
  *
  *  Contributors:
  *       Mercedes-Benz Tech Innovation GmbH - Implement automatic Hashicorp Vault token renewal
+ *       Cofinity-X GmbH - Authentication refactoring
  *
  */
 
-package org.eclipse.edc.vault.hashicorp.client;
+package org.eclipse.edc.vault.hashicorp.auth.tokenbased;
 
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
+import org.eclipse.edc.vault.hashicorp.auth.tokenbased.client.HashicorpVaultTokenAuthClient;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Executors;
@@ -38,7 +40,7 @@ public class HashicorpVaultTokenRenewTask {
 
     private final ExecutorInstrumentation executorInstrumentation;
 
-    private final HashicorpVaultClient client;
+    private final HashicorpVaultTokenAuthClient client;
 
     private final Monitor monitor;
     private final long renewBuffer;
@@ -58,7 +60,7 @@ public class HashicorpVaultTokenRenewTask {
      */
     public HashicorpVaultTokenRenewTask(@NotNull String name,
                                         @NotNull ExecutorInstrumentation executorInstrumentation,
-                                        @NotNull HashicorpVaultClient client,
+                                        @NotNull HashicorpVaultTokenAuthClient client,
                                         long renewBuffer,
                                         @NotNull Monitor monitor) {
         this.name = name;
